@@ -17,7 +17,7 @@ jobs:
       - run:
           name: Build Go Application
           command: |
-            go get github.com/anacrolix/torrent  # Build the Go binary (adjust path as needed)
+            go install github.com/anacrolix/torrent  # Build the Go binary (adjust path as needed)
             
       # Run the Go program that uses Anacrolix to download torrents
       - run:
