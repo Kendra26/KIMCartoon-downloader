@@ -1,33 +1,38 @@
 version: 2.1
 
-jobs:
-  download_magnet:
+executors:
+  go-executor:
     docker:
-      - image: python:3.9  # Use a Python image that fits your requirements
+      - image: golang:1.20  # Use the Go Docker image
+    working_directory: ~/repo
+
+jobs:
+  setup:
+    executor: go-executor
     steps:
-      - checkout  # Check out your source code
-
+      # Checkout the code from the repository
+      - checkout
+      
+      # Install dependencies (ensure git and Go are installed, Go should already be in the golang Docker image)
       - run:
-          name: Install torrentp
+          name: Install Dependencies
           command: |
-            pip install torrentp
-
+            go mod tidy  # Ensure Go modules are up-to-date
+            
+      # Build the Go project
       - run:
-          name: Download via magnet link
+          name: Build Go Application
           command: |
-            # Replace the magnet link below with your actual magnet link
-            torrentp --link 'magnet:?xt=urn:btih:9FC3BCB83ABC1A5E28C9A84C5A1109990E89A7F3&dn=Silo.S02E02.WEB.x264-PHOENiX&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Ftracker.tiny-vps.com%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce&tr=udp%3A%2F%2Fexplodie.org%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.cyberia.is%3A6969%2Fannounce&tr=udp%3A%2F%2Fipv4.tracker.harry.lu%3A80%2Fannounce&tr=udp%3A%2F%2Fp4p.arenabg.com%3A1337%2Fannounce&tr=udp%3A%2F%2Ftracker.birkenwald.de%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.moeking.me%3A6969%2Fannounce&tr=udp%3A%2F%2Fopentor.org%3A2710%2Fannounce&tr=udp%3A%2F%2Ftracker.dler.org%3A6969%2Fannounce&tr=udp%3A%2F%2Fuploads.gamecoast.net%3A6969%2Fannounce&tr=https%3A%2F%2Ftracker.foreverpirates.co%3A443%2Fannounce&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=http%3A%2F%2Ftracker.openbittorrent.com%3A80%2Fannounce&tr=udp%3A%2F%2Fopentracker.i2p.rocks%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.internetwarriors.net%3A1337%2Fannounce&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969%2Fannounce&tr=udp%3A%2F%2Fcoppersurfer.tk%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.zer0day.to%3A1337%2Fannounce'
-
+            go build -o torrent-downloader ./  # Build the Go binary (adjust path as needed)
+            
+      # Run the Go program that uses Anacrolix to download torrents
       - run:
-          name: Validate Download
-          command: ls -l  # Optional: Check files that were downloaded
-
-      - store_artifacts:
-          path: ./  # Store all downloaded files, you may want to specify a more precise path if needed
-          destination: downloaded_torrents  # Optional: Name of the artifacts folder
+          name: Run Torrent Downloader
+          command: |
+            ./torrent-downloader  # Replace this with the correct command to run your application
 
 workflows:
   version: 2
-  download_torrent_workflow:
+  build:
     jobs:
-      - download_magnet
+      - setup
