@@ -12,12 +12,6 @@ jobs:
     steps:
       # Checkout the code from the repository
       - checkout
-      
-      # Install dependencies (ensure git and Go are installed, Go should already be in the golang Docker image)
-      - run:
-          name: Install Dependencies
-          command: |
-            go mod tidy  # Ensure Go modules are up-to-date
             
       # Build the Go project
       - run:
