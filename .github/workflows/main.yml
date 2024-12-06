@@ -1,0 +1,27 @@
+name: Torrent Download
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y torrent-dl
+
+      - name: Torrent Download
+        env:
+          TORRENT_CREDENTIALS: ${{ secrets.TORRENT_CREDENTIALS }}
+        run: |
+          # Create a directory to store the downloads
+          mkdir -p downloads
+          
+          # Use torrent-dl to download the specified torrent
+          torrent-dl -i "magnet:?xt=urn:btih:3716A56E7EEBED5B721CB8F6C98F3BF44E6946A2&tr=udp%3A%2F%2Ftracker.bitsearch.to%3A1337%2Fannounce&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fipv4.tracker.harry.lu%3A80%2Fannounce&tr=udp%3A%2F%2Ftracker.uw0.xyz%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.moeking.me%3A6969%2Fannounce&dn=%5BBitsearch.to%5D+13+Ghosts+(1960)+%5BBluRay%5D+%5B720p%5D+%5BYTS.LT%5D" -o downloads/
