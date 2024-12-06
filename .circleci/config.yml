@@ -3,7 +3,7 @@ version: 2.1
 executors:
   go-executor:
     docker:
-      - image: golang:1.20  # Use the Go Docker image
+      - image: golang:1.23  # Use the Go Docker image
     working_directory: ~/repo
 
 jobs:
