@@ -1,7 +1,9 @@
 name: Torrent Download
 
 on:
-  workflow_dispatch: # Allows manual triggering of the workflow
+  push:
+    branches:
+      - main  # Change this to your default branch as necessary
 
 jobs:
   download:
