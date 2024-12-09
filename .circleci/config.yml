@@ -27,34 +27,29 @@ jobs:
           command: |
             deluge-console add "magnet:?xt=urn:btih:0D4AF725CC7CDF3CE933E5BFF8C0B3A6ED6E0D93&dn=Python+Programming+And+Maching+Learning+Understanding+How+To+Cod"
 
-      # Wait for the torrent to finish downloading
+      # Wait a fixed time before checking the torrent status
       - run:
-          name: "Wait for Torrent to Finish Downloading"
+          name: "Wait before checking Torrent Status"
           command: |
-            while true; do
-              info=$(deluge-console info | grep "State:")
-              if echo "$info" | grep -q "Seeding\|Stopped"; then
-                echo "Torrent download is complete."
-                break
-              fi
-              echo "Waiting for the torrent to finish downloading..."
-              sleep 30  # Check every 30 seconds
-            done
+            sleep 120  # Waiting for 120 seconds (2 minutes) for the download to progress.
 
-      # Stop the torrent and download files
+      # Check the torrent status once to see if it has completed.
       - run:
-          name: "Stop Torrent Download"
+          name: "Check Torrent Status"
           command: |
-            deluge-console pause
-            deluge-console remove "magnet:?xt=urn:btih:0D4AF725CC7CDF3CE933E5BFF8C0B3A6ED6E0D93&dn=Python+Programming+And+Maching+Learning+Understanding+How+To+Cod"
-            echo "Torrent has been paused and removed from Deluge."
+            state=$(deluge-console info | grep 'State:' | awk '{print $2}')
+            if [[ "$state" == "Finished" ]]; then
+              echo "Torrent download is complete."
+            else
+              echo "Torrent download is still in progress or failed. Current state: $state"
+              exit 1  # Exit with error as download did not complete
+            fi
 
-      # List downloaded files
+      # List downloaded files if the download is complete
       - run:
           name: "List Downloaded Files"
           command: |
-            # Check Deluge's default download directory
-            download_dir="$HOME/Downloads"
+            download_dir="$HOME/Downloads"  # Confirm this path with your Deluge setup
             echo "Files in $download_dir:"
             ls -lh "$download_dir"
 
