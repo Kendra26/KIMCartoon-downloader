@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
 
-      # Install Deluge and necessary dependencies
+      # Install Deluge and dependencies
       - run:
           name: "Install Deluge"
           command: |
@@ -29,12 +29,12 @@ jobs:
 
       # Wait for the torrent to finish downloading
       - run:
-          name: "Wait for Torrent to Finish"
+          name: "Wait for Torrent to Finish Downloading"
           command: |
             while true; do
-              status=$(deluge-console info | grep -o 'State: Seeding\|State: Finished')
-              if [[ "$status" == *"Finished"* ]]; then
-                echo "Torrent download finished."
+              info=$(deluge-console info | grep "State:")
+              if echo "$info" | grep -q "Seeding\|Stopped"; then
+                echo "Torrent download is complete."
                 break
               fi
               echo "Waiting for the torrent to finish downloading..."
@@ -49,14 +49,18 @@ jobs:
             deluge-console remove "magnet:?xt=urn:btih:0D4AF725CC7CDF3CE933E5BFF8C0B3A6ED6E0D93&dn=Python+Programming+And+Maching+Learning+Understanding+How+To+Cod"
             echo "Torrent has been paused and removed from Deluge."
 
-      # Assuming the files are downloaded to the current working directory or another specified directory
+      # List downloaded files
       - run:
           name: "List Downloaded Files"
-          command: ls -lh  # List files to see what has been downloaded
+          command: |
+            # Check Deluge's default download directory
+            download_dir="$HOME/Downloads"
+            echo "Files in $download_dir:"
+            ls -lh "$download_dir"
 
-      # Upload the downloaded files as CircleCI artifacts
+      # Store the downloaded files as CircleCI artifacts
       - store_artifacts:
-          path: ./  # Adjust this path to where your files are downloaded
+          path: "$HOME/Downloads"  # Adjust to actual download directory
           destination: downloaded_files  # Name for the artifacts
 
       # Stop the Deluge Daemon after tasks are done
