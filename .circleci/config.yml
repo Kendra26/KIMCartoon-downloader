@@ -7,35 +7,47 @@ jobs:
     steps:
       - checkout
 
-      # Install Deluge and necessary dependencies
+      # Install Deluge and its dependencies
       - run:
           name: "Install Deluge"
           command: |
             sudo apt-get update && \
             sudo apt-get install -y deluged deluge-console
 
-      # Start Deluge daemon
+      # Start the Deluge daemon
       - run:
           name: "Start Deluge Daemon"
-          command: deluged &
+          command: |
+            deluged &
+            sleep 10  # Wait for 10 seconds to ensure the daemon is running
 
-      # Add a torrent using Deluge console
+      # Check if Deluge daemon is running
+      - run:
+          name: "Check Deluge Daemon Status"
+          command: |
+            if pgrep -x "deluged" > /dev/null; then
+              echo "Deluge daemon is running."
+            else
+              echo "Deluge daemon is not running." && exit 1
+            fi
+
+      # Add a magnet link using Deluge Console
       - run:
           name: "Add torrent using Deluge Console"
           command: |
             deluge-console add "magnet:?xt=urn:btih:0D4AF725CC7CDF3CE933E5BFF8C0B3A6ED6E0D93&dn=Python+Programming+And+Maching+Learning+Understanding+How+To+Cod"
 
-      # Optionally, wait for a few seconds for the torrent to be added
+      # Wait for a few seconds for the torrent to start
       - run:
           name: "Wait for Torrent to Start"
           command: sleep 30
 
-      # You can also use deluge-console to check the status or perform further actions
+      # Check Deluge Status to confirm the torrent was added
       - run:
           name: "Check Deluge Status"
           command: deluge-console info
 
-      # Just an example of stopping the daemon if needed
+      # Stop the Deluge Daemon after tasks are done
       - run:
           name: "Stop Deluge Daemon"
           command: killall deluged
