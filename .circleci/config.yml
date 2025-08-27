@@ -20,26 +20,43 @@ jobs:
           command: |
             cat download_links.txt | xargs -n 1 -P 4 wget --content-disposition --no-check-certificate -P downloads
       - run:
-          name: Rename files
+          name: Rename files with debug
           command: |
+            shopt -s nocasematch
             find ./downloads -type f -print0 | while IFS= read -r -d '' f; do
-              dir=$(dirname "$f")
               filename=$(basename "$f")
+              echo "Processing file: $filename"
               ext="${filename##*.}"
               base="${filename%.*}"
+              echo "Extension: $ext, Base: $base"
+
+              # Check if extension is one of the media types
               if [[ "$ext" =~ ^(mkv|mp4|avi|mov)$ ]]; then
+                echo "Skipping renaming for media file: $filename"
                 continue
               fi
+
+              # Remove dots from the base filename
               newbase="${base//./}"
-              newname="$dir/$newbase.$ext"
-              if [ "$f" != "$newname" ]; then
+              newname="$f"  # Default to original if no change
+
+              # Construct new filename with original extension
+              newname="${f%/*}/$newbase.$ext"
+              echo "Intended new filename: $newname"
+
+              # Only rename if filename differs
+              if [ "$filename" != "$newbase.$ext" ]; then
+                echo "Renaming '$filename' to '$newbase.$ext'"
                 mv "$f" "$newname"
+              else
+                echo "No renaming needed for: $filename"
               fi
             done
       - run:
           name: Upload files to PixelDrain
           command: |
             find ./downloads -type f -print0 | while IFS= read -r -d '' file; do
+              echo "Uploading: $file"
               curl -g -X POST "https://upload.gofile.io/uploadfile" \
                 -H "Authorization: Bearer NkEP9nPmjC5bYQB7ZabZKnsUEBi7ww85" \
                 -F "file=@\"$file\"" \
