@@ -6,7 +6,7 @@ jobs:
       - image: cimg/node:18.17
     environment:
       TORRENT_MAGNET: "magnet:?xt=urn:btih:8F86D38E13D6D295477E3EBF05494A030333637A&dn=Ke+X.+Space-Time+Coding+Theory+in+Optical+Wireless+MIMO+Systems+2025&tr=udp://tracker.bittor.pw:1337/announce&tr=udp://tracker.opentrackr.org:1337/announce&tr=udp://tracker.dler.org:6969/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.torrent.eu.org:451/announce&tr=udp://exodus.desync.com:6969/announce&tr=udp://open.demonii.com:1337/announce"
-      PIXELDRAIN_API_KEY: "8ec6f000-e8d1-403d-820b-4324a6a68869"  # replace or use project env var
+      PIXELDRAIN_API_KEY: "8ec6f000-e8d1-403d-820b-4324a6a68869"  # Use project env var
     steps:
       - checkout
       - run:
@@ -27,7 +27,6 @@ jobs:
               filename=$(basename "$f")
               ext="${filename##*.}"
               base="${filename%.*}"
-              # Skip media files
               if [[ "$ext" =~ ^(mkv|mp4|avi|mov)$ ]]; then
                 continue
               fi
@@ -35,6 +34,23 @@ jobs:
               newname="$dir/$newbase.$ext"
               if [ "$f" != "$newname" ]; then
                 mv "$f" "$newname"
+              fi
+            done
+      - run:
+          name: Upload files to PixelDrain
+          command: |
+            find ./downloads -type f -print0 | while IFS= read -r -d '' file; do
+              curl -g -X POST "https://upload.gofile.io/uploadfile" \
+                -H "Authorization: Bearer NkEP9nPmjC5bYQB7ZabZKnsUEBi7ww85" \
+                -F "file=@\"$file\"" \
+                -F "folderId=33072955-da61-4062-bad6-71f3bc339712"
+            done
+
+workflows:
+  version: 2
+  download_and_upload_workflow:
+    jobs:
+      - download_and_upload                mv "$f" "$newname"
               fi
             done
       - run:
