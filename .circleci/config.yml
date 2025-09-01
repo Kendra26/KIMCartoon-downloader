@@ -13,13 +13,13 @@ jobs:
           command: |
             mkdir -p downloads
             # Extract lines with URLs and filenames
-            curl -s https://klipit.in/ugq73679 | grep -oP 'http[s]?://[^"'\'' >]+?\.(mp4|mkv)\s+[^\s<]+' > links_filenames.txt
+            curl -s https://klipit.in/ugq73679 | grep -oP 'http[s]?://[^"'\'' >]+?\.(mp4|mkv|rar|zip)\s+[^\s<]+' > links_filenames.txt
             cat links_filenames.txt
       - run:
           name: Download media files and rename by removing dots before extension
           command: |
             while read -r line; do
-              url=$(echo "$line" | grep -oP 'http[s]?://[^"'\'' >]+?\.(mp4|mkv|rar|zip)')
+              url=$(echo "$line" | grep -oP 'http[s]?://[^"'\'' >]+?\.(mp4|mkv)')
               filename=$(echo "$line" | awk '{print $NF}')
               # Remove all dots except the last one before extension
               base="${filename%.*}"
@@ -29,33 +29,6 @@ jobs:
               echo "Downloading $url as $newname"
               wget -q "$url" -O "downloads/$newname"
             done < links_filenames.txt
-      - run:
-          name: Upload files to PixelDrain
-          command: |
-            find ./downloads -type f -print0 | while IFS= read -r -d '' file; do
-              echo "Uploading: $file"
-              curl -g -X POST "https://upload.gofile.io/uploadfile" \
-                -H "Authorization: Bearer NkEP9nPmjC5bYQB7ZabZKnsUEBi7ww85" \
-                -F "file=@\"$file\"" \
-                -F "folderId=33072955-da61-4062-bad6-71f3bc339712"
-            done
-
-workflows:
-  version: 2
-  download_and_upload_workflow:
-    jobs:
-      - download_and_upload              # Construct new filename with original extension
-              newname="${f%/*}/$newbase.$ext"
-              echo "Intended new filename: $newname"
-
-              # Only rename if filename differs
-              if [ "$filename" != "$newbase.$ext" ]; then
-                echo "Renaming '$filename' to '$newbase.$ext'"
-                mv "$f" "$newname"
-              else
-                echo "No renaming needed for: $filename"
-              fi
-            done
       - run:
           name: Upload files to PixelDrain
           command: |
