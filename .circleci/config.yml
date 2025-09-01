@@ -1,60 +1,68 @@
-version: 2.1
-
+version: 2
 jobs:
   download_and_upload:
     docker:
       - image: cimg/node:18.17
     environment:
-      TORRENT_MAGNET: "magnet:?xt=urn:btih:8F86D38E13D6D295477E3EBF05494A030333637A&dn=Ke+X.+Space-Time+Coding+Theory+in+Optical+Wireless+MIMO+Systems+2025&tr=udp://tracker.bittor.pw:1337/announce&tr=udp://tracker.opentrackr.org:1337/announce&tr=udp://tracker.dler.org:6969/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.torrent.eu.org:451/announce&tr=udp://exodus.desync.com:6969/announce&tr=udp://open.demonii.com:1337/announce"
-      PIXELDRAIN_API_KEY: "8ec6f000-e8d1-403d-820b-4324a6a68869"
+      # Your environment variables here
+      # Example:
+      PIXELDRAIN_API_KEY: "YOUR_API_KEY"
     steps:
       - checkout
       - run:
-          name: Download file
+          name: Extract download link
           command: |
+            # Create download directory
             mkdir -p downloads
-            curl -s https://klipit.in/ugq73679 | grep -oP 'http[s]?://[^"'\'' >]+?\.(mp4|mkv|rar|zip)' > download_links.txt
+            # Fetch webpage and extract the first matching download link
+            curl -s https://klipit.in/ugq73679 | grep -oP 'http[s]?://[^"'\'' >]+?\.(mp4|mkv|zip|rar)' | head -n 1 > download_link.txt
+            cat download_link.txt
       - run:
-          name: Download media files
+          name: Derive filename from URL
           command: |
-            cat download_links.txt | xargs -n 1 -P 4 wget --content-disposition --no-check-certificate -P downloads
+            # Read the URL
+            url=$(cat download_link.txt)
+            echo "Download URL: $url"
+            # Extract filename from URL
+            filename=$(basename "$url")
+            echo "Original filename: $filename"
+            # Save filename to file for later steps
+            echo "$filename" > filename.txt
       - run:
-          name: Rename files with debug
+          name: Transform filename (replace dots with spaces except last dot)
           command: |
-            shopt -s nocasematch
-            find ./downloads -type f -print0 | while IFS= read -r -d '' f; do
-              filename=$(basename "$f")
-              echo "Processing file: $filename"
-              ext="${filename##*.}"
-              base="${filename%.*}"
-              echo "Extension: $ext, Base: $base"
-
-              # Replace dots with spaces in the base filename
-              newbase="${base//./ }"
-              echo "New base after replacing dots with spaces: '$newbase'"
-
-              # Construct new filename with original extension
-              newname="${f%/*}/$newbase.$ext"
-              echo "Intended new filename: $newname"
-
-              # Only rename if filename differs
-              if [ "$filename" != "$newbase.$ext" ]; then
-                echo "Renaming '$filename' to '$newbase.$ext'"
-                mv "$f" "$newname"
-              else
-                echo "No renaming needed for: $filename"
-              fi
-            done
+            filename=$(cat filename.txt)
+            echo "Processing filename: $filename"
+            # Separate extension
+            ext="${filename##*.}"
+            base="${filename%.*}"
+            echo "Base: $base"
+            echo "Extension: $ext"
+            # Replace dots with spaces in base
+            newbase="${base//./ }"
+            echo "New base: $newbase"
+            # Construct new filename
+            newfilename="${newbase}.${ext}"
+            echo "New filename: $newfilename"
+            # Save new filename
+            echo "$newfilename" > new_filename.txt
       - run:
-          name: Upload files to PixelDrain
+          name: Download media file with new filename
           command: |
-            find ./downloads -type f -print0 | while IFS= read -r -d '' file; do
-              echo "Uploading: $file"
-              curl -g -X POST "https://upload.gofile.io/uploadfile" \
-                -H "Authorization: Bearer NkEP9nPmjC5bYQB7ZabZKnsUEBi7ww85" \
-                -F "file=@\"$file\"" \
-                -F "folderId=33072955-da61-4062-bad6-71f3bc339712"
-            done
+            url=$(cat download_link.txt)
+            newfilename=$(cat new_filename.txt)
+            echo "Downloading from $url as $newfilename"
+            wget --content-disposition --no-check-certificate "$url" -O "downloads/$newfilename"
+      - run:
+          name: Upload file to PixelDrain
+          command: |
+            # Upload the file
+            file_path="downloads/$(cat new_filename.txt)"
+            echo "Uploading $file_path"
+            curl -g -X POST "https://upload.gofile.io/uploadfile" \
+              -H "Authorization: Bearer NkEP9nPmjC5bYQB7ZabZKnsUEBi7ww85" \
+              -F "file=@\"$file_path\"" \
+              -F "folderId=33072955-da61-4062-bad6-71f3bc339712"
 
 workflows:
   version: 2
