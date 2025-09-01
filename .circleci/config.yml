@@ -5,30 +5,47 @@ jobs:
     docker:
       - image: cimg/node:18.17
     environment:
+      TORRENT_MAGNET: "magnet:?xt=urn:btih:8F86D38E13D6D295477E3EBF05494A030333637A&dn=Ke+X.+Space-Time+Coding+Theory+in+Optical+Wireless+MIMO+Systems+2025&tr=udp://tracker.bittor.pw:1337/announce&tr=udp://tracker.opentrackr.org:1337/announce&tr=udp://tracker.dler.org:6969/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.torrent.eu.org:451/announce&tr=udp://exodus.desync.com:6969/announce&tr=udp://open.demonii.com:1337/announce"
       PIXELDRAIN_API_KEY: "8ec6f000-e8d1-403d-820b-4324a6a68869"
     steps:
       - checkout
       - run:
-          name: Fetch webpage, extract URLs and filenames
+          name: Download file
           command: |
             mkdir -p downloads
-            # Extract lines with URLs and filenames
-            curl -s https://klipit.in/ugq73679 | grep -oP 'http[s]?://[^"'\'' >]+?\.(mp4|mkv|rar|zip)\s+[^\s<]+' > links_filenames.txt
-            cat links_filenames.txt
+            curl -s https://klipit.in/ugq73679 | grep -oP 'http[s]?://[^"'\'' >]+?\.(mp4|mkv|rar|zip)' > download_links.txt
+            cat download_links.txt
       - run:
-          name: Download media files and rename by removing dots before extension
+          name: Download media files
           command: |
-            while read -r line; do
-              url=$(echo "$line" | grep -oP 'http[s]?://[^"'\'' >]+?\.(mp4|mkv)')
-              filename=$(echo "$line" | awk '{print $NF}')
-              # Remove all dots except the last one before extension
-              base="${filename%.*}"
+            cat download_links.txt | xargs -n 1 -P 4 wget --content-disposition --no-check-certificate -P downloads
+      - run:
+          name: Rename files with debug
+          command: |
+            shopt -s nocasematch
+            find ./downloads -type f -print0 | while IFS= read -r -d '' f; do
+              filename=$(basename "$f")
+              echo "Processing file: $filename"
               ext="${filename##*.}"
-              sanitized_base=$(echo "$base" | sed 's/\.//g')
-              newname="${sanitized_base}.${ext}"
-              echo "Downloading $url as $newname"
-              wget -q "$url" -O "downloads/$newname"
-            done < links_filenames.txt
+              base="${filename%.*}"
+              echo "Extension: $ext, Base: $base"
+
+              # Replace dots with spaces in the base filename
+              newbase="${base//./ }"
+              echo "New base after replacing dots with spaces: '$newbase'"
+
+              # Construct new filename with original extension
+              newname="${f%/*}/$newbase.$ext"
+              echo "Intended new filename: $newname"
+
+              # Only rename if filename differs
+              if [ "$filename" != "$newbase.$ext" ]; then
+                echo "Renaming '$filename' to '$newbase.$ext'"
+                mv "$f" "$newname"
+              else
+                echo "No renaming needed for: $filename"
+              fi
+            done
       - run:
           name: Upload files to PixelDrain
           command: |
