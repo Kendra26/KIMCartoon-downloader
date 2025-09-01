@@ -14,7 +14,6 @@ jobs:
           command: |
             mkdir -p downloads
             curl -s https://klipit.in/ugq73679 | grep -oP 'http[s]?://[^"'\'' >]+?\.(mp4|mkv|rar|zip)' > download_links.txt
-            cat download_links.txt
       - run:
           name: Download media files
           command: |
