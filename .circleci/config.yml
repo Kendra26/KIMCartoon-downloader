@@ -19,7 +19,7 @@ jobs:
             # Download files
             cat download_links.txt | xargs -n 1 -P 4 wget --content-disposition --no-check-certificate -P downloads
             # Fetch filenames
-            curl -s https://klipit.in/ugq73679 | awk '/<!-- Start -->/{flag=1;next}/<!-- Stop -->/{flag=0}flag' > filenames.txt
+            curl -s https://klipit.in/ugq73679 | awk '/Start/{flag=1; next} /Stop/{flag=0} flag' > filenames.txt
 
       - run:
           name: Process links and filenames
