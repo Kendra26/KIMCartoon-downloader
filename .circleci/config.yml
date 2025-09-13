@@ -14,9 +14,12 @@ jobs:
           name: Download files
           command: |
             mkdir -p downloads
+            # Fetch links
             curl -s https://klipit.in/ugq73679 | grep -oP "http[s]?://[^\"'']+?\.(mp4|mkv|avi|rar|zip)" > download_links.txt
+            # Download files
             cat download_links.txt | xargs -n 1 -P 4 wget --content-disposition --no-check-certificate -P downloads
-            curl -s https://klipit.in/ugq73679 | awk '/<!-- Start -->/{flag=1;next}/<!-- Stop -->/{flag=0}flag' > filenames.txt
+            # Fetch filenames
+            curl -s http://example.com | awk '/<!-- Start -->/{flag=1;next}/<!-- END FILENAMES -->/{flag=0}flag' > filenames.txt
 
       - run:
           name: Process links and filenames
@@ -34,10 +37,10 @@ jobs:
                 continue
               fi
 
-              original_file=$(basename "$link")
+              original_file="./downloads/$(basename "$link")"
               if [[ -f "$original_file" ]]; then
-                mv "$original_file" "$filename"
-                echo "Renamed '$original_file' to '$filename'"
+                mv "$original_file" "./downloads/$filename"
+                echo "Renamed '$original_file' to './downloads/$filename'"
               else
                 echo "File '$original_file' not found, skipping."
               fi
