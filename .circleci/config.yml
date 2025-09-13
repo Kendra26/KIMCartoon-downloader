@@ -37,6 +37,12 @@ jobs:
                 continue
               fi
 
+              # Skip if filename is empty
+              if [[ -z "$filename" ]]; then
+                echo "No filename specified for link: $link, skipping."
+                continue
+              fi
+
               original_file="./downloads/$(basename "$link")"
               if [[ -f "$original_file" ]]; then
                 mv "$original_file" "./downloads/$filename"
