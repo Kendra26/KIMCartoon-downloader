@@ -6,60 +6,30 @@ jobs:
       - image: cimg/node:18.17
     environment:
       TORRENT_MAGNET: "magnet:?xt=urn:btih:8F86D38E13D6D295477E3EBF05494A030333637A&dn=Ke+X.+Space-Time+Coding+Theory+in+Optical+Wireless+MIMO+Systems+2025&tr=udp://tracker.bittor.pw:1337/announce&tr=udp://tracker.opentrackr.org:1337/announce&tr=udp://tracker.dler.org:6969/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.torrent.eu.org:451/announce&tr=udp://exodus.desync.com:6969/announce&tr=udp://open.demonii.com:1337/announce"
-      PIXELDRAIN_API_KEY: "8ec6f000-e8d1-403d-820b-4324a6a68869"
+      PIXELDRAIN_API_KEY: "8ec6f000-e8d1-403d-820b-4324a6a68869"  # replace or use project env var
     steps:
-      - checkout
-
+      - checkout     
       - run:
           name: Download files
-          command: |
+          command: |          
             mkdir -p downloads
-            # Fetch links
-            curl -s https://klipit.in/ugq73679 | grep -oP "http[s]?://[^\"'']+?\.(mp4|mkv|avi|rar|zip)" > download_links.txt
-            # Download files
+            curl -s https://klipit.in/ugq73679 | grep -oP 'http[s]?://[^"'\'' >]+?\.(mp4|mkv)' > download_links.txt
             cat download_links.txt | xargs -n 1 -P 4 wget --content-disposition --no-check-certificate -P downloads
-            # Fetch filenames
-            curl -s https://klipit.in/ugq73679 | awk '/Start/{flag=1; next} /Stop/{flag=0} flag' > filenames.txt
-
       - run:
-          name: Process links and filenames
+          name: Upload files to buzzheavier.com
           command: |
-            # Read links and filenames into arrays
-            mapfile -t links < download_links.txt
-            mapfile -t filenames < filenames.txt
-
-            for i in "${!links[@]}"; do
-              link="${links[$i]}"
-              filename="${filenames[$i]}"
-
-              if [[ "$link" == magnet:* ]]; then
-                echo "Skipping magnet link: $link"
-                continue
-              fi
-
-              # Skip if filename is empty
-              if [[ -z "$filename" ]]; then
-                echo "No filename specified for link: $link, skipping."
-                continue
-              fi
-
-              original_file="./downloads/$(basename "$link")"
-              if [[ -f "$original_file" ]]; then
-                mv "$original_file" "./downloads/$filename"
-                echo "Renamed '$original_file' to './downloads/$filename'"
-              else
-                echo "File '$original_file' not found, skipping."
-              fi
-            done
-
-      - run:
-          name: Upload files to PixelDrain
-          command: |
-            find ./downloads -type f -print0 | while IFS= read -r -d '' file; do
-              curl -g -X POST "https://upload.gofile.io/uploadfile" \
-                -H "Authorization: Bearer D6TLIacgqNHu93hAjSOBgyZxOWEUOmzO" \
-                -F "file=@\"$file\"" \
-                -F "folderId=06972e06-3bf5-4b70-8e6e-8eb3e3ce4307"
+            # Set your local directory inside the container
+            LOCAL_DIR="downloads"
+            TARGET_URL="https://w.buzzheavier.com/bnyznwosiir7"
+            ACCOUNT_ID="HZ7U0SXV0YKJYO0C77ZI"  # Replace with your actual account ID
+            
+            # Loop through all files in the downloads directory
+            find "$LOCAL_DIR" -type f | while read -r FILE; do
+                FILENAME=$(basename "$FILE")
+                echo "Uploading $FILENAME..."
+                curl -#o - -T "$FILE" \
+                -H "Authorization: Bearer $ACCOUNT_ID" \
+                "$TARGET_URL/$FILENAME"
             done
 
 workflows:
